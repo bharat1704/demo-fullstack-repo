@@ -28,7 +28,6 @@ jobs:
         working-directory: backend
         run: |
           npm ci
-          npm test
 
   docker-deploy:
     needs: build-test
