@@ -6,10 +6,10 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECS_CLUSTER: bharat-backend-cluster
-  ECS_SERVICE: bharat-backend-service
-  ECR_REPO: ${{ secrets.ECR_REPO }}
-  ECR_URI: ${{ secrets.ECR_URI }}
+  ECS_CLUSTER: bharat-backend-cluster         # name of your ECS Cluster
+  ECS_SERVICE: bharat-backend-service         # name of your ECS Service
+  ECR_REPO: bharat-backend-repo               # name of your ECR repository (no URI)
+  ECR_URI: ${{ secrets.ECR_URI }}             # complete ECR URI (e.g. 1234567890.dkr.ecr.us-east-1.amazonaws.com/bharat-backend-repo)
 
 jobs:
   build-test:
@@ -28,6 +28,7 @@ jobs:
         working-directory: backend
         run: |
           npm install
+          # npm test  # uncomment if you have tests
 
   docker-deploy:
     needs: build-test
@@ -48,14 +49,24 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, Tag, and Push Docker Image
+        working-directory: backend
         run: |
-          docker build -t $ECR_REPO ./backend
+          docker build -t $ECR_REPO .
           docker tag $ECR_REPO:latest $ECR_URI:latest
           docker push $ECR_URI:latest
 
-      - name: Deploy ECS Service
+      - name: Register new ECS Task Definition revision
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs-task-def.json      # path to your ECS task definition file
+          container-name: backend-container       # container name from ECS task
+          image: ${{ env.ECR_URI }}:latest
+
+      - name: Deploy to ECS Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
