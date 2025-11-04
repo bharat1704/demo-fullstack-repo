@@ -64,87 +64,87 @@ jobs:
           docker tag $ECR_REPO:latest $ECR_URI:latest
           docker push $ECR_URI:latest
 
-  # 3️⃣ Deploy to Staging
-  deploy_staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build_and_push
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # # 3️⃣ Deploy to Staging
+  # deploy_staging:
+  #   name: Deploy to Staging
+  #   runs-on: ubuntu-latest
+  #   needs: build_and_push
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy ECS Service to Staging
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          service: staging-${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+  #     - name: Deploy ECS Service to Staging
+  #       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+  #       with:
+  #         service: staging-${{ env.ECS_SERVICE }}
+  #         cluster: ${{ env.ECS_CLUSTER }}
+  #         wait-for-service-stability: true
 
-  # 4️⃣ Manual Approval for Production
-  approval:
-    name: Manual Approval
-    runs-on: ubuntu-latest
-    needs: deploy_staging
-    environment:
-      name: production
-      # Go to Repo → Settings → Environments → production → set approvers
-    steps:
-      - name: Await manual approval
-        run: echo "✅ Awaiting manual approval before production deploy"
+  # # 4️⃣ Manual Approval for Production
+  # approval:
+  #   name: Manual Approval
+  #   runs-on: ubuntu-latest
+  #   needs: deploy_staging
+  #   environment:
+  #     name: production
+  #     # Go to Repo → Settings → Environments → production → set approvers
+  #   steps:
+  #     - name: Await manual approval
+  #       run: echo "✅ Awaiting manual approval before production deploy"
 
-  # 5️⃣ Deploy to Production
-  deploy_prod:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: approval
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # # 5️⃣ Deploy to Production
+  # deploy_prod:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: approval
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy ECS Service to Production
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          service: prod-${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+  #     - name: Deploy ECS Service to Production
+  #       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+  #       with:
+  #         service: prod-${{ env.ECS_SERVICE }}
+  #         cluster: ${{ env.ECS_CLUSTER }}
+  #         wait-for-service-stability: true
 
-  # 6️⃣ Notify on Failure via Gmail
-  notify_failure:
-    name: Notify on Failure (Gmail)
-    runs-on: ubuntu-latest
-    if: failure()
-    needs: [test, build_and_push, deploy_staging, deploy_prod]
-    steps:
-      - name: Send Failure Email
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.GMAIL_USERNAME }}
-          password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "❌ CI/CD Pipeline Failed - ${{ github.workflow }}"
-          to: ${{ secrets.NOTIFY_EMAIL }}
-          from: "CI/CD Bot <${{ secrets.GMAIL_USERNAME }}>"
-          body: |
-            The CI/CD pipeline has failed!
+  # # 6️⃣ Notify on Failure via Gmail
+  # notify_failure:
+  #   name: Notify on Failure (Gmail)
+  #   runs-on: ubuntu-latest
+  #   if: failure()
+  #   needs: [test, build_and_push, deploy_staging, deploy_prod]
+  #   steps:
+  #     - name: Send Failure Email
+  #       uses: dawidd6/action-send-mail@v3
+  #       with:
+  #         server_address: smtp.gmail.com
+  #         server_port: 465
+  #         username: ${{ secrets.GMAIL_USERNAME }}
+  #         password: ${{ secrets.GMAIL_APP_PASSWORD }}
+  #         subject: "❌ CI/CD Pipeline Failed - ${{ github.workflow }}"
+  #         to: ${{ secrets.NOTIFY_EMAIL }}
+  #         from: "CI/CD Bot <${{ secrets.GMAIL_USERNAME }}>"
+  #         body: |
+  #           The CI/CD pipeline has failed!
             
-            ❌ Workflow: ${{ github.workflow }}
-            ❌ Job: ${{ github.job }}
-            ❌ Commit: ${{ github.sha }}
-            ❌ Author: ${{ github.actor }}
+  #           ❌ Workflow: ${{ github.workflow }}
+  #           ❌ Job: ${{ github.job }}
+  #           ❌ Commit: ${{ github.sha }}
+  #           ❌ Author: ${{ github.actor }}
             
-            Please check the GitHub Actions logs for more details.
+  #           Please check the GitHub Actions logs for more details.
