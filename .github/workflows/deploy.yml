@@ -8,7 +8,7 @@ env:
   AWS_REGION: us-east-1
   ECS_CLUSTER: bharat-backend-cluster         # name of your ECS Cluster
   ECS_SERVICE: bharat-backend-service         # name of your ECS Service
-  ECR_REPO:${{ secrets.ECR_REPO }}                 # name of your ECR repository (no URI)
+  ECR_REPO: ${{ secrets.ECR_REPO }}            # name of your ECR repository (no URI)
   ECR_URI: ${{ secrets.ECR_URI }}             # complete ECR URI (e.g. 1234567890.dkr.ecr.us-east-1.amazonaws.com/bharat-backend-repo)
 
 jobs:
