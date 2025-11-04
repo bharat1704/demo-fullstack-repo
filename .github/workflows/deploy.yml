@@ -63,11 +63,14 @@ jobs:
             --query taskDefinition \
             --output json > task-def.json
 
+          cat task-def.json | jq 'del(.enableFaultInjection)' > clean-task-def.json
+  
+
       - name: Update image in task definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-def.json
+          task-definition: clean-task-def.json
           container-name: backend
           image: ${{ env.ECR_URI }}:${{ env.IMAGE_TAG }}
 
