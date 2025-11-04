@@ -27,7 +27,7 @@ jobs:
       - name: Install Dependencies and Run Tests
         working-directory: backend
         run: |
-          npm ci
+          npm install
 
   docker-deploy:
     needs: build-test
