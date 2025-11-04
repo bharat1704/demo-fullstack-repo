@@ -11,7 +11,7 @@ function App() {
   const fetchMessage = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/hello");
+      const res = await fetch("http://bharatmali.store/api/hello");
       const data = await res.json();
       setMessage(data.message);
     } catch (err) {
