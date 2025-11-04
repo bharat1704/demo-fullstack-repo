@@ -1,169 +1,150 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: ${{ secrets.ECR_REPO }}
+  ECR_URI: ${{ secrets.ECR_URI }}
+  ECS_CLUSTER: test-backend-cluster
+  ECS_SERVICE: backend-task-service-i3o5pj2b
 
 jobs:
-  build:
+  # 1️⃣ Run Tests on PR creation
+  test:
+    name: Run Unit & Integration Tests
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Run backend tests
+      - name: Install dependencies
         working-directory: backend
-        run: npm install && npm test
+        run: npm ci
 
-  docker:
-    needs: build
+      - name: Run unit and integration tests
+        working-directory: backend
+        run: npm test
+
+  # 2️⃣ Build & Push Docker Image (only on merge to main)
+  build_and_push:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image
-        run: |
-          docker build -t ${{ secrets.ECR_REPO }} ./backend
-          docker tag ${{ secrets.ECR_REPO }}:latest ${{ secrets.ECR_URI }}:latest
-          docker push ${{ secrets.ECR_URI }}:latest
+      - name: Build Docker image
+        run: docker build -t $ECR_REPO ./backend
 
-  deploy:
-    needs: docker
+      # - name: Scan Docker Image for Vulnerabilities
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     image-ref: ${{ env.ECR_REPO }}
+      #     severity: CRITICAL,HIGH
+      #     ignore-unfixed: true
+      #     exit-code: 1
+
+      - name: Tag & Push image to ECR
+        run: |
+          docker tag $ECR_REPO:latest $ECR_URI:latest
+          docker push $ECR_URI:latest
+
+  # 3️⃣ Deploy to Staging
+  deploy_staging:
+    name: Deploy to Staging
     runs-on: ubuntu-latest
+    needs: build_and_push
     steps:
-      - name: Deploy ECS Service
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy ECS Service to Staging
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ecs-task-def.json
-          service: bharat-backend-service
-          cluster: bharat-backend-cluster
+          service: staging-${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
+  # 4️⃣ Manual Approval for Production
+  approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    needs: deploy_staging
+    environment:
+      name: production
+      # Go to Repo → Settings → Environments → production → set approvers
+    steps:
+      - name: Await manual approval
+        run: echo "✅ Awaiting manual approval before production deploy"
 
-########Second Version
+  # 5️⃣ Deploy to Production
+  deploy_prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-# name: CI/CD Pipeline - Backend (ECS)
+      - name: Deploy ECS Service to Production
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          service: prod-${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
-# env:
-#   AWS_REGION: us-east-1
-#   ECR_REPO: ${{ secrets.ECR_REPO }}
-#   ECR_URI: ${{ secrets.ECR_URI }}
-#   ECS_CLUSTER: bharat-backend-cluster
-#   ECS_SERVICE: bharat-backend-service
-
-# jobs:
-#   # 1️⃣ Run Tests
-#   test:
-#     name: Run Backend Tests
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 18
-
-#       - name: Install & Test
-#         working-directory: backend
-#         run: |
-#           npm ci
-#           npm test
-
-#   # 2️⃣ Build & Push Docker Image
-#   docker:
-#     name: Build and Push Docker Image
-#     needs: test
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-
-#       - name: Login to Amazon ECR
-#         uses: aws-actions/amazon-ecr-login@v2
-
-#       - name: Build Docker Image
-#         run: docker build -t $ECR_REPO ./backend
-
-#       - name: Scan Image for Vulnerabilities (Trivy)
-#         uses: aquasecurity/trivy-action@master
-#         with:
-#           image-ref: $ECR_REPO
-#           severity: CRITICAL,HIGH
-#           ignore-unfixed: true
-#           exit-code: 1
-
-#       - name: Tag and Push Image
-#         run: |
-#           docker tag $ECR_REPO:latest $ECR_URI:latest
-#           docker push $ECR_URI:latest
-
-#   # 3️⃣ Manual Approval for Production
-#   approval:
-#     name: Manual Approval (Prod)
-#     needs: docker
-#     runs-on: ubuntu-latest
-#     environment:
-#       name: production
-#       # ✅ This triggers GitHub's built-in manual approval step
-#       # Go to Repo → Settings → Environments → production → set approvers
-#     steps:
-#       - name: Await Approval
-#         run: echo "Waiting for approval to deploy to production"
-
-#   # 4️⃣ Deploy to ECS (Staging/Prod)
-#   deploy:
-#     name: Deploy to ECS
-#     needs: approval
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ env.AWS_REGION }}
-
-#       - name: Deploy ECS Service
-#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-#         with:
-#           service: ${{ env.ECS_SERVICE }}
-#           cluster: ${{ env.ECS_CLUSTER }}
-#           wait-for-service-stability: true
-
-#   # 5️⃣ Slack Notification (on failure)
-#   notify:
-#     name: Notify on Failure
-#     needs: [test, docker, deploy]
-#     if: failure()
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Send Slack Alert
-#         uses: rtCamp/action-slack-notify@v2
-#         env:
-#           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-#           SLACK_COLOR: danger
-#           SLACK_MESSAGE: "❌ Deployment failed in `${{ github.workflow }}` for commit `${{ github.sha }}` by `${{ github.actor }}`"
-#           SLACK_USERNAME: "CI/CD Bot"
+  # 6️⃣ Notify on Failure via Gmail
+  notify_failure:
+    name: Notify on Failure (Gmail)
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [test, build_and_push, deploy_staging, deploy_prod]
+    steps:
+      - name: Send Failure Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "❌ CI/CD Pipeline Failed - ${{ github.workflow }}"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: "CI/CD Bot <${{ secrets.GMAIL_USERNAME }}>"
+          body: |
+            The CI/CD pipeline has failed!
+            
+            ❌ Workflow: ${{ github.workflow }}
+            ❌ Job: ${{ github.job }}
+            ❌ Commit: ${{ github.sha }}
+            ❌ Author: ${{ github.actor }}
+            
+            Please check the GitHub Actions logs for more details.
