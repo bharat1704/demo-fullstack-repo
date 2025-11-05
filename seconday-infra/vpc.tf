@@ -52,7 +52,7 @@ resource "aws_route_table" "public" {
   tags = { Name = "public-rt" }
 }
 
-# Associate public subnet with public route table
+# It associates public subnet with public route table
 resource "aws_route_table_association" "public_assoc_a" {
   subnet_id      = aws_subnet.public_a.id
   route_table_id = aws_route_table.public.id

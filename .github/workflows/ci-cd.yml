@@ -6,10 +6,10 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECS_CLUSTER: test-backend-cluster         # name of your ECS Cluster
-  ECS_SERVICE: backend-task-service-i3o5pj2b         # name of your ECS Service
-  ECR_REPO: ${{ secrets.ECR_REPO }}            # name of your ECR repository (no URI)
-  ECR_URI: ${{ secrets.ECR_URI }}             # complete ECR URI (e.g. 1234567890.dkr.ecr.us-east-1.amazonaws.com/bharat-backend-repo)
+  ECS_CLUSTER: test-backend-cluster         # name of the  ECS Cluster
+  ECS_SERVICE: backend-service         # name of the ECS Service
+  ECR_REPO: ${{ secrets.ECR_REPO }}           
+  ECR_URI: ${{ secrets.ECR_URI }}             
 
 jobs:
   build-test:
@@ -28,7 +28,7 @@ jobs:
         working-directory: backend
         run: |
           npm install
-          # npm test  # uncomment if you have tests
+          # npm test  # if there are test cases
 
   docker-deploy:
     needs: build-test

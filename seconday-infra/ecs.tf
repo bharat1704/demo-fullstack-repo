@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
 }
 
 ###########################################
-# CloudWatch Log Group (Optional but recommended)
+# CloudWatch Log Group (Optional )
 ###########################################
 resource "aws_cloudwatch_log_group" "ecs_backend_logs" {
   name              = "/ecs/backend"
@@ -48,7 +48,7 @@ resource "aws_ecs_task_definition" "backend_task" {
   cpu                      = "256"
   memory                   = "512"
 
-  # 👇 Required for Fargate (Fixes your error)
+  #  Required for Fargate
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
@@ -63,7 +63,7 @@ resource "aws_ecs_task_definition" "backend_task" {
         }
       ]
 
-      # ✅ Optional: Send logs to CloudWatch
+      # Optional: Send logs to CloudWatch
       logConfiguration = {
         logDriver = "awslogs"
         options = {
