@@ -48,15 +48,15 @@ Infrastructure (seconday-infra/)
 - Key files:
   - provider.tf — AWS provider configuration
   - vpc.tf — VPC, subnets, NAT, etc.
-  - rds.tf — RDS database (if used)
+  - rds.tf — RDS database 
   - ecs.tf — ECS cluster, task definition, service
   - security_groups.tf — security group rules
   - variables.tf  — variables
 - Typical workflow:
   - cd seconday-infra
   - terraform init
-  - terraform plan -var-file="secrets.tfvars"
-  - terraform apply -var-file="secrets.tfvars"
+  - terraform plan
+  - terraform apply 
 - Notes:
   - Provide AWS credentials via environment variables or a named profile.
   - Keep sensitive values (DB password, image auth) outside source control (use `*.tfvars` ignored by git).
@@ -68,16 +68,6 @@ Environment variables
   - PORT, DATABASE_URL or DB_HOST/DB_USER/DB_PASS as required by the service
   - When running in ECS, these are typically injected via task definition or secrets manager
 
-Running the full stack locally
-1. Start backend:
-   - cd backend && npm install && npm start
-2. Start frontend:
-   - cd frontend && npm install && npm run dev
-3. Point the frontend to the local backend (update the frontend env variable to http://localhost:3000)
-
-Further notes
-- The Terraform and deployment steps assume familiarity with AWS, ECR, ECS and Vercel. Adjust configurations to match your AWS account, region, and naming conventions.
-- For production deployments, secure secrets using AWS Secrets Manager / Parameter Store and enable appropriate IAM permissions.
 
 Quick links
 - frontend/ — React app
