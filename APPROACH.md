@@ -86,7 +86,12 @@ Backend -> RDS (Private Subnet)
 5. Monitoring and alerting setup
 6. Automated backup and disaster recovery
 
-
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
 
 
 

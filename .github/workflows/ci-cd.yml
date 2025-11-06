@@ -9,7 +9,7 @@ env:
   ECS_CLUSTER: test-backend-cluster         # name of the  ECS Cluster
   ECS_SERVICE: backend-service         # name of the ECS Service
   ECR_REPO: ${{ secrets.ECR_REPO }}           
-  ECR_URI: ${{ secrets.ECR_URI }}
+  ECR_URI: ${{ secrets.ECR_URI }}             
 
 jobs:
   build-test:

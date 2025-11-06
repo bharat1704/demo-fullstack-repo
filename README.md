@@ -51,7 +51,7 @@ Infrastructure (seconday-infra/)
   - rds.tf — RDS database (if used)
   - ecs.tf — ECS cluster, task definition, service
   - security_groups.tf — security group rules
-  - variables.tf / outputs.tf — variables and outputs
+  - variables.tf  — variables
 - Typical workflow:
   - cd seconday-infra
   - terraform init
@@ -83,3 +83,4 @@ Quick links
 - frontend/ — React app
 - backend/ — Node.js + Docker service
 - seconday-infra/ — Terraform infra for ECS deployment
+
