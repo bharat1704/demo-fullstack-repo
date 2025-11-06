@@ -10,7 +10,6 @@ env:
   ECS_SERVICE: backend-service         # name of the ECS Service
   ECR_REPO: ${{ secrets.ECR_REPO }}           
   ECR_URI: ${{ secrets.ECR_URI }}
-  IMAGE_TAG: ${{ secrets.IMAGE_TAG }}
 
 jobs:
   build-test:
@@ -83,3 +82,4 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
 
           wait-for-service-stability: true
+
